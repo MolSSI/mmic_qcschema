@@ -1,8 +1,8 @@
 mmic_qcschema
 ==============================
 [//]: # (Badges)
-[![GitHub Actions Build Status](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/mmic_qcschema/workflows/CI/badge.svg)](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/mmic_qcschema/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/mmic_qcschema/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/mmic_qcschema/branch/master)
+[![GitHub Actions Build Status](https://github.com/MolSSI/mmic_qcschema/workflows/CI/badge.svg)](https://github.com/MolSSI/mmic_qcschema/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/MolSSI/mmic_qcschema/branch/master/graph/badge.svg)](https://codecov.io/gh/MolSSI/mmic_qcschema/branch/main)
 
 
 MMSchema to/from QCSchema converter
