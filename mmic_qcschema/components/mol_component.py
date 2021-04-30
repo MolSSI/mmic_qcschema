@@ -1,7 +1,6 @@
-from mmelemental.models.molecule import Molecule
 from typing import Dict, Any, List, Tuple, Optional
-from mmelemental.util.units import convert
-import parmed
+import qcelemental
+import mmelemental
 
 from mmic_translator import (
     TransComponent,
@@ -12,8 +11,8 @@ from mmic_translator import (
 __all__ = ["MolToQCSchemaComponent", "QCSchemaToMolComponent"]
 
 
-class MolToParmedComponent(TransComponent):
-    """ A component for converting Molecule to ParmEd molecule object. """
+class MolToQCSchemaComponent(TransComponent):
+    """A component for converting MMSchema to QCSchema molecule."""
 
     def execute(
         self,
@@ -23,124 +22,68 @@ class MolToParmedComponent(TransComponent):
         scratch_name: Optional[str] = None,
         timeout: Optional[int] = None,
     ) -> Tuple[bool, TransOutput]:
-        """
-        Works for writing PDB files e.g. pmol.save("file.pdb") but fails for gro files
-        TODO: need to investigate this more. Routine is also very slow. Try to vectorize.
-        """
         if isinstance(inputs, dict):
             inputs = self.input()(**inputs)
 
         mmol = inputs.schema_object
-        pmol = parmed.structure.Structure()
-        natoms = len(mmol.symbols)
-        atom_empty = parmed.topologyobjects.Atom()
-
-        if mmol.masses is not None:
-            masses = convert(
-                mmol.masses, mmol.masses_units, atom_empty.umass.unit.get_symbol()
-            )
-        else:
-            masses = None
-
-        if mmol.atom_labels is not None:
-            atom_labels = mmol.atom_labels
-        else:
-            atom_labels = None
-
-        if mmol.atomic_numbers is not None:
-            atomic_numbers = mmol.atomic_numbers
-        else:
+        if mmol.atomic_numbers is None:
             raise NotImplementedError(
-                "mmic_parmed is supported only for atomic/molecular systems. Molecule.atomic_numbers must be defined."
+                "QCSchema supports only atomic molecules. Molecule.atomic_numbers must be defined."
             )
 
-        for index, symb in enumerate(mmol.symbols):
+        if mmol.ndim != 3:
+            raise NotImplementedError("QCSchema supports only 3D molecules")
 
-            label = atom_labels[index] if atom_labels is not None else None
-            # name = ToolkitMolecule.check_name(name)
-            atomic_number = (
-                atomic_numbers[index] if atomic_numbers is not None else None
-            )
-            mass = masses[index] if masses is not None else None
+        assert (
+            inputs.schema_object.schema_version == 1
+        ), "This converter works only with mmschema_molecule version 1"
 
-            # Will likely lose FF-related info ... but then Molecule is not supposed to store any params specific to FFs
-            atom = parmed.topologyobjects.Atom(
-                list=None,
-                atomic_number=atomic_number,
-                name=symb,
-                type=label,
-                mass=mass,
-                nb_idx=0,
-                solvent_radius=0.0,
-                screen=0.0,
-                tree="BLA",
-                join=0.0,
-                irotat=0.0,
-                occupancy=1.0,
-                bfactor=0.0,
-                altloc="",
-                number=-1,
-                rmin=None,
-                epsilon=None,
-                rmin14=None,
-                epsilon14=None,
-            )
+        geo_factor = qcelemental.constants.conversion_factor(
+            mmol.geometry_units, "bohr"
+        )
+        coordinates = mmol.geometry * geo_factor
 
-            if mmol.substructs:
-                resname, resnum = mmol.substructs[index]
-            else:
-                resname, resnum = "UNK", 0
-            # classparmed.Residue(name, number=- 1, chain='', insertion_code='', segid='', list=None)[source]
-            pmol.add_atom(atom, resname, resnum, chain="", inscode="", segid="")
+        charge_factor = qcelemental.constants.conversion_factor(
+            mmol.molecular_charge_units, "elementary_charge"
+        )
+        mol_charge = charge_factor * mmol.molecular_charge
 
-        if mmol.geometry is not None:
-            pmol.coordinates = mmol.geometry.reshape(natoms, 3)
-            pmol.coordinates = convert(
-                pmol.coordinates, mmol.geometry_units, pmol.positions.unit.get_name()
-            )
+        mass_factor = qcelemental.constants.conversion_factor(
+            mmol.masses_units, "atomic_mass_unit"
+        )
+        masses = mass_factor * mmol.masses
 
-        if mmol.velocities is not None:
-            units_speed = "angstrom/picosecond"  # hard-coded in parmed 3.4.0
-            pmol.velocities = mmol.velocities.reshape(natoms, 3)
-            pmol.velocities = convert(
-                pmol.velocities, mmol.velocities_units, units_speed
-            )
+        extras = mmol.extras
 
-        if mmol.connectivity:
-            for (
-                i,
-                j,
-                order,
-            ) in mmol.connectivity:
-                # pmol.atoms[i].bond_to(pmol.atoms[j])
-                pmol.bonds.append(
-                    parmed.topologyobjects.Bond(pmol.atoms[i], pmol.atoms[j], order)
-                )
-                # both implementations seem to perform almost the same
+        # atom_labels in qcel are treated in lower case ... so
+        # we store atom_labels from MMSchema in extras instead
+        if extras is not None:
+            if mmol.atom_labels is not None:
+                extras.update({"atom_labels": mmol.atom_labels})
+        elif mmol.atom_labels is not None:
+            extras = {"atom_labels": mmol.atom_labels}
 
-        if mmol.angles:
-            for i, j, k in mmol.angles:
-                pmol.angles.append(
-                    parmed.topologyobjects.Angle(
-                        pmol.atoms[i], pmol.atoms[j], pmol.atoms[k]
-                    )
-                )
+        data = {
+            "atomic_numbers": mmol.atomic_numbers,
+            "mass_numbers": mmol.mass_numbers,
+            "symbols": mmol.symbols,
+            "geometry": coordinates,
+            "connectivity": mmol.connectivity,
+            "masses": masses,
+            "molecular_charge": mol_charge,
+            "comment": mmol.comment,
+            "identifiers": mmol.identifiers,
+            "real": mmol.real,
+            "extras": extras,
+        }
 
-        if mmol.dihedrals:
-            for i, j, k, l in mmol.dihedrals:
-                pmol.dihedrals.append(
-                    parmed.topologyobjects.Dihedral(
-                        pmol.atoms[i], pmol.atoms[j], pmol.atoms[k], pmol.atoms[l]
-                    )
-                )
+        qmol = qcelemental.models.Molecule(**data, validate=True, nonphysical=False)
 
-        return True, TransOutput(
-            proc_input=inputs, data_object=pmol
-        )  # need to include velocity units, make a PR?
+        return True, TransOutput(proc_input=inputs, data_object=qmol)
 
 
-class ParmedToMolComponent(TransComponent):
-    """ A component for converting ParmEd molecule to Molecule object. """
+class QCSchemaToMolComponent(TransComponent):
+    """A component for converting ParmEd molecule to Molecule object."""
 
     def execute(
         self,
@@ -154,50 +97,53 @@ class ParmedToMolComponent(TransComponent):
         if isinstance(inputs, dict):
             inputs = self.input()(**inputs)
 
-        # I think parmed.Structure does not store forces
-        pmol = inputs.data_object
-        geo_units, vel_units = None, None
+        assert (
+            inputs.data_object.schema_version == 2
+        ), "This converter works only with qcschema_molecule version 2"
 
-        geo = TransComponent.get(pmol, "coordinates")
-        if geo is not None:  # General enough? hackish?
-            geo = geo.flatten()
-            geo_units = pmol.positions.unit.get_name()
+        qcmol = inputs.data_object
 
-        vel = TransComponent.get(pmol, "velocities")
-        if vel is not None:
-            vel = vel.flatten()
-            vel_units = "angstrom/picosecond"  # hard-coded in ParmEd
+        mm_units = mmelemental.models.Molecule.get_units()
+        geo_factor = qcelemental.constants.conversion_factor(
+            "bohr", mm_units["geometry_units"]
+        )
+        coordinates = qcmol.geometry.flatten() * geo_factor
 
-        atomic_nums = [atom.atomic_number for atom in pmol.atoms]
-        names = [atom.name for atom in pmol.atoms]
+        charge_factor = qcelemental.constants.conversion_factor(
+            "elementary_charge", mm_units["molecular_charge_units"]
+        )
+        mol_charge = charge_factor * qcmol.molecular_charge
 
-        masses = [atom.mass for atom in pmol.atoms]
-        masses_units = pmol.atoms[0].umass.unit.get_name()
+        mass_factor = qcelemental.constants.conversion_factor(
+            "atomic_mass_unit", mm_units["masses_units"]
+        )
+        masses = mass_factor * qcmol.masses
 
-        # If bond order is none, set it to 1.
-        if hasattr(pmol, "bonds"):
-            connectivity = [
-                (bond.atom1.idx, bond.atom2.idx, bond.order or 1) for bond in pmol.bonds
-            ]
+        # since qcel treats atom_labels in lower case, we get
+        # them instead from extras
+        if qcmol.extras is not None:
+            atom_labels = qcmol.extras.pop("atom_labels")
         else:
-            connectivity = None
-
-        if hasattr(pmol, "residues"):
-            residues = [(atom.residue.name, atom.residue.idx) for atom in pmol.atoms]
+            atom_labels = None
 
         input_dict = {
-            "atomic_numbers": atomic_nums,
-            "symbols": names,
-            "geometry": geo,
-            "geometry_units": geo_units,
-            "velocities": vel,
-            "velocities_units": vel_units,
-            "substructs": residues,
-            "connectivity": connectivity,
+            "atomic_numbers": qcmol.atomic_numbers,
+            "mass_numbers": qcmol.mass_numbers
+            if all(qcmol.mass_numbers > 0)
+            else None,  # qcel can return mass_number = -1, which likely means
+            # the masses are inconsistent with the mass_numbers
+            "symbols": qcmol.symbols,
+            "geometry": coordinates,
+            "connectivity": qcmol.connectivity,
             "masses": masses,
-            "masses_units": masses_units,
+            "molecular_charge": mol_charge,
+            "atom_labels": atom_labels,
+            "comment": qcmol.comment,
+            "identifiers": qcmol.identifiers,
+            "real": qcmol.real,
+            "extras": qcmol.extras,
         }
 
         return True, TransOutput(
-            proc_input=inputs, schema_object=Molecule(**input_dict)
+            proc_input=inputs, schema_object=mmelemental.models.Molecule(**input_dict)
         )
