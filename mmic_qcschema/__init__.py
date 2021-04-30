@@ -4,7 +4,7 @@ MMSchema to/from QCSchema converter
 """
 
 # Add imports here
-from .mmic_qcschema import *
+from .components import *
 
 # Handle versioneer
 from ._version import get_versions
