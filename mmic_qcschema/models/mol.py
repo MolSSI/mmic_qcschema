@@ -4,31 +4,38 @@ from mmelemental.models.molecule import Molecule
 import qcelemental
 
 # QCElemental converter components
-from mmic_qcschema.components.mol_component import QCSchemaToMolComponent, MolToQCSchemaComponent
+from mmic_qcschema.components.mol_component import (
+    QCSchemaToMolComponent,
+    MolToQCSchemaComponent,
+)
 
 __all__ = ["QCSchemaMol"]
 
 
 class QCSchemaMol(ToolkitModel):
-    """ A model for QCSchema storing an equivalent MMSchema molecule. """
+    """A model for QCSchema storing an equivalent MMSchema molecule."""
 
     @property
     def dtype(self):
-        """ Returns the fundamental molecule object type. """
+        """Returns the fundamental molecule object type."""
         return qcelemental.models.Molecule
 
     @classmethod
     def isvalid(cls, data):
-        """ Makes sure the Structure object stores atoms. """
+        """Makes sure the Structure object stores atoms."""
         if hasattr(data, "symbols"):
             if len(data.symbols):
                 return data
 
-        raise ValueError("QCSchema molecule object does not contain any atoms!")
+        raise AttributeError("QCSchema molecule object does not store any atoms!")
 
     @classmethod
     def from_file(
-        cls, filename: str, top_filename: Optional[str] = None, dtype: Optional[str] = None, **kwargs
+        cls,
+        filename: str,
+        top_filename: Optional[str] = None,
+        dtype: Optional[str] = None,
+        **kwargs
     ) -> "QCSchemaMol":
         """
         Constructs an QCSchemaMol object from file(s).
@@ -47,7 +54,9 @@ class QCSchemaMol(ToolkitModel):
             A constructed QCSchema molecule object.
         """
         if top_filename:
-            raise NotImplementedError("Topology/connectivity files not supported in QCElemental.")
+            raise NotImplementedError(
+                "Topology/connectivity files not supported in QCElemental."
+            )
         mol = qcelemental.models.Molecule.from_file(filename, dtype, **kwargs)
         return cls(data=mol)
 
@@ -62,7 +71,7 @@ class QCSchemaMol(ToolkitModel):
         data: Molecule
             Data to construct Molecule from.
         version: int, optional
-            Schema version e.g. 1. Overwrites data.schema_version.
+            Schema version e.g. 1. Overrides data.schema_version.
         **kwargs
             Additional kwargs to pass to the constructors.
         Returns
@@ -98,7 +107,7 @@ class QCSchemaMol(ToolkitModel):
         Parameters
         ----------
         version: str, optional
-            Schema specification version to comply with e.g. 1.0.1.
+            Schema specification version to comply with e.g. 1
         **kwargs
             Additional kwargs to pass to the constructor.
         """
