@@ -73,7 +73,6 @@ class MolToQCSchemaComponent(TransComponent):
             "molecular_charge": mol_charge,
             "comment": mmol.comment,
             "identifiers": mmol.identifiers,
-            "real": mmol.real,
             "extras": extras,
         }
 
@@ -140,7 +139,6 @@ class QCSchemaToMolComponent(TransComponent):
             "atom_labels": atom_labels,
             "comment": qcmol.comment,
             "identifiers": qcmol.identifiers,
-            "real": qcmol.real,
             "extras": qcmol.extras,
         }
 
