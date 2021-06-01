@@ -51,7 +51,7 @@ class MolToQCSchemaComponent(TransComponent):
         mass_factor = qcelemental.constants.conversion_factor(
             mmol.masses_units, "atomic_mass_unit"
         )
-        masses = mass_factor * mmol.masses
+        masses = mass_factor * mmol.masses  # ignore masses for now
 
         extras = mmol.extras
 
@@ -61,7 +61,7 @@ class MolToQCSchemaComponent(TransComponent):
             if mmol.atom_labels is not None:
                 extras.update({"atom_labels": mmol.atom_labels})
         elif mmol.atom_labels is not None:
-            extras = {"atom_labels": mmol.atom_labels}
+            extras = {"atom_labels": mmol.atom_labels, "masses_mmel": masses}
 
         data = {
             "atomic_numbers": mmol.atomic_numbers,
@@ -69,7 +69,6 @@ class MolToQCSchemaComponent(TransComponent):
             "symbols": mmol.symbols,
             "geometry": coordinates,
             "connectivity": mmol.connectivity,
-            "masses": masses,
             "molecular_charge": mol_charge,
             "comment": mmol.comment,
             "identifiers": mmol.identifiers,
@@ -121,7 +120,7 @@ class QCSchemaToMolComponent(TransComponent):
         # since qcel treats atom_labels in lower case, we get
         # them instead from extras
         if qcmol.extras is not None:
-            atom_labels = qcmol.extras.pop("atom_labels")
+            atom_labels = qcmol.extras.pop("atom_labels", None)
         else:
             atom_labels = None
 
