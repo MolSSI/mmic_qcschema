@@ -9,7 +9,7 @@ import mmelemental as mmel
 import mm_data
 import pytest
 import sys
-
+import os
 
 try:
     import qcengine
@@ -63,5 +63,18 @@ def test_qc_to_mm(mmol):
             "schema_name": ret.molecule.schema_name,
         }
     else:
-        inputs = {"data_object": qmol, "schema_name": qmol.schema_name, "schema_version": qmol.schema_version}
+        inputs = {
+            "data_object": qmol,
+            "schema_name": qmol.schema_name,
+            "schema_version": qmol.schema_version,
+        }
     return QCSchemaToMolComponent.compute(inputs).schema_object
+
+
+@pytest.mark.parametrize("mmol", mmols)
+def test_model(mmol):
+    qmol = mmic_qcschema.models.QCSchemaMol.from_schema(mmol)
+    qmol.to_file("tmp.json")
+    qmol = mmic_qcschema.models.QCSchemaMol.from_file("tmp.json")
+    mmol = qmol.to_schema()
+    os.remove("tmp.json")
