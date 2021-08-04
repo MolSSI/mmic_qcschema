@@ -31,7 +31,7 @@ def test_mmic_qcschema_imported():
 
 @pytest.mark.parametrize("mmol", mmols)
 def test_mm_to_qc(mmol):
-    inputs = {"schema_object": mmol}
+    inputs = {"schema_object": mmol, "schema_name": "mmschema", "schema_version": 1.0}
     return MolToQCSchemaComponent.compute(inputs).data_object
 
 
@@ -57,7 +57,11 @@ def test_qc_to_mm(mmol):
         ret = qc_run(qmol)
         if ret.error:
             raise RuntimeError(ret.error.error_message)
-        inputs = {"data_object": ret.molecule}
+        inputs = {
+            "data_object": ret.molecule,
+            "schema_version": ret.molecule.schema_version,
+            "schema_name": ret.molecule.schema_name,
+        }
     else:
-        inputs = {"data_object": qmol}
+        inputs = {"data_object": qmol, "schema_name": qmol.schema_name, "schema_version": qmol.schema_version}
     return QCSchemaToMolComponent.compute(inputs).schema_object
