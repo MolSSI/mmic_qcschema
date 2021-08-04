@@ -48,10 +48,10 @@ class MolToQCSchemaComponent(TransComponent):
         )
         mol_charge = charge_factor * mmol.molecular_charge
 
-        mass_factor = qcelemental.constants.conversion_factor(
-            mmol.masses_units, "atomic_mass_unit"
-        )
-        masses = mass_factor * mmol.masses  # ignore masses for now
+        # mass_factor = qcelemental.constants.conversion_factor(
+        #    mmol.masses_units, "atomic_mass_unit"
+        # )
+        # masses = mass_factor * mmol.masses  # ignore masses for now
 
         extras = mmol.extras
 
@@ -76,8 +76,14 @@ class MolToQCSchemaComponent(TransComponent):
         }
 
         qmol = qcelemental.models.Molecule(**data, validate=True, nonphysical=False)
-
-        return True, TransOutput(proc_input=inputs, data_object=qmol)
+        success = True
+        return success, TransOutput(
+            proc_input=inputs,
+            data_object=qmol,
+            success=success,
+            schema_name=inputs.schema_name,
+            schema_version=inputs.schema_version,
+        )
 
 
 class QCSchemaToMolComponent(TransComponent):
@@ -141,6 +147,11 @@ class QCSchemaToMolComponent(TransComponent):
             "extras": qcmol.extras,
         }
 
-        return True, TransOutput(
-            proc_input=inputs, schema_object=mmelemental.models.Molecule(**input_dict)
+        success = True
+        return success, TransOutput(
+            proc_input=inputs,
+            success=success,
+            schema_name=inputs.schema_name,
+            schema_version=inputs.schema_version,
+            schema_object=mmelemental.models.Molecule(**input_dict),
         )
