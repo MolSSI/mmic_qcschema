@@ -5,7 +5,7 @@ mmic_qcschema
 [![codecov](https://codecov.io/gh/MolSSI/mmic_qcschema/branch/master/graph/badge.svg)](https://codecov.io/gh/MolSSI/mmic_qcschema/branch/main)
 
 
-MMSchema to/from QCSchema converter
+MMSchema/QCSchema Molecule converter
 
 ### Copyright
 
