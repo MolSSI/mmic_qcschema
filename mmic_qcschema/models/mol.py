@@ -15,8 +15,12 @@ __all__ = ["QCSchemaMol"]
 class QCSchemaMol(ToolkitModel):
     """A model for QCSchema storing an equivalent MMSchema molecule."""
 
-    @property
-    def dtype(self):
+    @classmethod
+    def engine(cls):
+        return "qcelemental", qcelemental.__version__
+
+    @classmethod
+    def dtype(cls):
         """Returns the fundamental molecule object type."""
         return qcelemental.models.Molecule
 
@@ -82,11 +86,13 @@ class QCSchemaMol(ToolkitModel):
         inputs = {
             "schema_object": data,
             "schema_version": version or data.schema_version,
+            "schema_name": kwargs.pop("schema_name", data.schema_name),
+            "keywords": kwargs,
         }
         out = MolToQCSchemaComponent.compute(inputs)
         return cls(data=out.data_object, units=out.data_units)
 
-    def to_file(self, filename: str, dtype: str = None, mode: str = "w", **kwargs):
+    def to_file(self, filename: str, dtype: str = None, mode: str = None, **kwargs):
         """Writes the molecule to a file.
         Parameters
         ----------
@@ -100,7 +106,7 @@ class QCSchemaMol(ToolkitModel):
         if mode:
             raise NotImplementedError("File write mode not supported in QCElemental.")
 
-        self.to_file(filename, dtype, **kwargs)
+        self.data.to_file(filename, dtype, **kwargs)
 
     def to_schema(self, version: Optional[int] = 0, **kwargs) -> Molecule:
         """Converts the molecule to MMSchema molecule.
@@ -111,7 +117,12 @@ class QCSchemaMol(ToolkitModel):
         **kwargs
             Additional kwargs to pass to the constructor.
         """
-        inputs = {"data_object": self.data, "schema_version": version, "kwargs": kwargs}
+        inputs = {
+            "data_object": self.data,
+            "schema_version": version,
+            "schema_name": "mmschema_molecule",
+            "keywords": kwargs,
+        }
         out = QCSchemaToMolComponent.compute(inputs)
         if version:
             assert version == out.schema_version
