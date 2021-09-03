@@ -61,19 +61,23 @@ class MolToQCSchemaComponent(TransComponent):
             if mmol.atom_labels is not None:
                 extras.update({"atom_labels": mmol.atom_labels})
         elif mmol.atom_labels is not None:
-            extras = {"atom_labels": mmol.atom_labels, "masses_mmel": masses}
+            extras = {
+                "atom_labels": mmol.atom_labels,
+            }  # "masses_mmel": masses}
 
         data = {
             "atomic_numbers": mmol.atomic_numbers,
             "mass_numbers": mmol.mass_numbers,
             "symbols": mmol.symbols,
             "geometry": coordinates,
-            "connectivity": mmol.connectivity,
             "molecular_charge": mol_charge,
             "comment": mmol.comment,
             "identifiers": mmol.identifiers,
             "extras": extras,
         }
+
+        if mmol.connectivity is not None:
+            data["connectivity"] = mmol.connectivity
 
         qmol = qcelemental.models.Molecule(**data, validate=True, nonphysical=False)
         success = True
@@ -138,7 +142,6 @@ class QCSchemaToMolComponent(TransComponent):
             # the masses are inconsistent with the mass_numbers
             "symbols": qcmol.symbols,
             "geometry": coordinates,
-            "connectivity": qcmol.connectivity,
             "masses": masses,
             "molecular_charge": mol_charge,
             "atom_labels": atom_labels,
@@ -146,6 +149,9 @@ class QCSchemaToMolComponent(TransComponent):
             "identifiers": qcmol.identifiers,
             "extras": qcmol.extras,
         }
+
+        if qcmol.connectivity is not None:
+            input_dict["connectivity"] = qcmol.connectivity
 
         success = True
         return success, TransOutput(
