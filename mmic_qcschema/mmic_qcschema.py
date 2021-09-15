@@ -6,29 +6,19 @@ Handles the primary functions
 """
 
 
-def canvas(with_attribution=True):
-    """
-    Placeholder function to show example docstring (NumPy format)
+# Handle versioneer
+from ._version import get_versions
 
-    Replace this function and doc string for your own project
-
-    Parameters
-    ----------
-    with_attribution : bool, Optional, default: True
-        Set whether or not to display who the quote is from
-
-    Returns
-    -------
-    quote : str
-        Compiled string including quote and optional attribution
-    """
-
-    quote = "The code is but a canvas to our imagination."
-    if with_attribution:
-        quote += "\n\t- Adapted from Henry David Thoreau"
-    return quote
+versions = get_versions()
+__version__ = versions["version"]
+__git_revision__ = versions["full-revisionid"]
+del get_versions, versions
 
 
-if __name__ == "__main__":
-    # Do something if this file is invoked on its own
-    print(canvas())
+molread_ext_maps = {
+    ".xyz": "xyz",
+    ".json": "json",
+    ".msgpack": "msgpack",
+}
+
+molwrite_ext_maps = {".xyz": "xyz", ".json": "json", ".msgpack": "msgpack"}
