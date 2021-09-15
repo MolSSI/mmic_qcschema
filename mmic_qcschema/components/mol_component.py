@@ -1,18 +1,53 @@
-from typing import Dict, Any, List, Tuple, Optional
+from mmic.components import TacticComponent
+from cmselemental.util.decorators import classproperty
 import qcelemental
 import mmelemental
+from ..mmic_qcschema import __version__
+from typing import Dict, Any, List, Tuple, Optional, Set
 
 from mmic_translator import (
-    TransComponent,
     TransInput,
     TransOutput,
 )
 
+provenance_stamp = {
+    "creator": "mmic_qcschema",
+    "version": __version__,
+    "routine": __name__,
+}
+
 __all__ = ["MolToQCSchemaComponent", "QCSchemaToMolComponent"]
 
 
-class MolToQCSchemaComponent(TransComponent):
+class MolToQCSchemaComponent(TacticComponent):
     """A component for converting MMSchema to QCSchema molecule."""
+
+    @classmethod
+    def input(cls):
+        return TransInput
+
+    @classmethod
+    def output(cls):
+        return TransOutput
+
+    @classmethod
+    def get_version(cls) -> str:
+        """Finds program, extracts version, returns normalized version string.
+        Returns
+        -------
+        str
+            Return a valid, safe python version string.
+        """
+        raise NotImplementedError
+
+    @classproperty
+    def strategy_comps(cls) -> Set[str]:
+        """Returns the strategy component(s) this (tactic) component belongs to.
+        Returns
+        -------
+        Set[str]
+        """
+        return {"mmic_translator"}
 
     def execute(
         self,
@@ -87,11 +122,39 @@ class MolToQCSchemaComponent(TransComponent):
             success=success,
             schema_name=inputs.schema_name,
             schema_version=inputs.schema_version,
+            provenance=provenance_stamp,
         )
 
 
-class QCSchemaToMolComponent(TransComponent):
+class QCSchemaToMolComponent(TacticComponent):
     """A component for converting ParmEd molecule to Molecule object."""
+
+    @classmethod
+    def input(cls):
+        return TransInput
+
+    @classmethod
+    def output(cls):
+        return TransOutput
+
+    @classmethod
+    def get_version(cls) -> str:
+        """Finds program, extracts version, returns normalized version string.
+        Returns
+        -------
+        str
+            Return a valid, safe python version string.
+        """
+        raise NotImplementedError
+
+    @classproperty
+    def strategy_comps(cls) -> Set[str]:
+        """Returns the strategy component(s) this (tactic) component belongs to.
+        Returns
+        -------
+        Set[str]
+        """
+        return {"mmic_translator"}
 
     def execute(
         self,
@@ -160,4 +223,5 @@ class QCSchemaToMolComponent(TransComponent):
             schema_name=inputs.schema_name,
             schema_version=inputs.schema_version,
             schema_object=mmelemental.models.Molecule(**input_dict),
+            provenance=provenance_stamp,
         )
