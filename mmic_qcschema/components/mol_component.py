@@ -174,7 +174,7 @@ class QCSchemaToMolComponent(TacticComponent):
 
         qcmol = inputs.data_object
 
-        mm_units = mmelemental.models.Molecule.get_units()
+        mm_units = mmelemental.models.Molecule.default_units
         geo_factor = qcelemental.constants.conversion_factor(
             "bohr", mm_units["geometry_units"]
         )

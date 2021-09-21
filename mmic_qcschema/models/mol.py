@@ -90,7 +90,7 @@ class QCSchemaMol(ToolkitModel):
             "keywords": kwargs,
         }
         out = MolToQCSchemaComponent.compute(inputs)
-        return cls(data=out.data_object, units=out.data_units)
+        return cls(data=out.data_object, data_units=out.data_units)
 
     def to_file(self, filename: str, dtype: str = None, mode: str = None, **kwargs):
         """Writes the molecule to a file.
