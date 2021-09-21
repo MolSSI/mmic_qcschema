@@ -22,7 +22,7 @@ dependencies:
   - pip:
     - qcelemental
     - qcengine
-    - mmic
+    - git+https://github.com/MolSSI/mmic.git
     - git+https://github.com/MolSSI/cmselemental.git@v0.2.0
     - git+https://github.com/MolSSI/mmelemental.git
     - git+https://github.com/MolSSI/mm_data.git
